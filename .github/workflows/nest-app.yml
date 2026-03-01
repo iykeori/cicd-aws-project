@@ -73,7 +73,7 @@ jobs:
 
       - name: Run Terraform init
         working-directory: terraform-modules/nest-app
-        run: terraform init
+        run: terraform init -upgrade
 
       - name: Run Terraform plan
         working-directory: terraform-modules/nest-app
