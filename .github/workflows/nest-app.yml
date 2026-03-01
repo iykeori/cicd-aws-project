@@ -213,8 +213,8 @@ jobs:
             --task-definition "${TASK_DEFINITION_NAME}:${TASK_DEFINITION_REVISION}" --force-new-deployment \
             --health-check-grace-period-seconds 60
 
-          aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME} \
-            --cli-read-timeout 900"
+          aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}" \
+            --cli-read-timeout 900
 
   #--------------------------------------------------------------
   # JOB 5: Test Application Health
