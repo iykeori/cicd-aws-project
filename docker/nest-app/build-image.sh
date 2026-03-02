@@ -13,6 +13,7 @@ export RDS_DB_PASSWORD_SECRET=$RDS_DB_PASSWORD
 # ================================================================
 
 docker build \
+    --platform linux/amd64 \
     --secret id=personal_access_token,env=PERSONAL_ACCESS_TOKEN_SECRET \
     --secret id=rds_db_password,env=RDS_DB_PASSWORD_SECRET \
     --build-arg PROJECT_NAME="$PROJECT_NAME" \
