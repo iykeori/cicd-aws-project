@@ -210,11 +210,9 @@ jobs:
           TASK_DEFINITION_REVISION: ${{ needs.create_task_definition_revision.outputs.new_task_definition_revision }}
         run: |
           aws ecs update-service --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}" \
-            --task-definition "${TASK_DEFINITION_NAME}:${TASK_DEFINITION_REVISION}" --force-new-deployment \
-            --health-check-grace-period-seconds 60
+            --task-definition "${TASK_DEFINITION_NAME}:${TASK_DEFINITION_REVISION}" --force-new-deployment
 
-          aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}" \
-            --cli-read-timeout 900
+          aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}"
 
   #--------------------------------------------------------------
   # JOB 5: Test Application Health
