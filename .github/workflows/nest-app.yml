@@ -34,7 +34,7 @@ env:
   AWS_SECRET_ACCESS_KEY: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
   AWS_REGION: us-east-1
   AWS_ACCOUNT_ID: 202202722931
-  TERRAFORM_ACTION: apply
+  TERRAFORM_ACTION: destroy
   PROJECT_NAME: nest
   ENVIRONMENT: dev
   RECORD_NAME: www
@@ -191,28 +191,28 @@ jobs:
       new_task_definition_revision: ${{ env.NEW_TASK_DEFINITION_REVISION }}
       current_task_definition_revision: ${{ env.CURRENT_TASK_DEFINITION_REVISION }}
 
-  # #--------------------------------------------------------------
-  # # JOB 4: Restart ECS Fargate Service
-  # #--------------------------------------------------------------
-  # restart_ecs_service:
-  #   name: Restart ECS Fargate service
-  #   needs:
-  #     - deploy_aws_infrastructure
-  #     - create_task_definition_revision
-  #   if: needs.deploy_aws_infrastructure.outputs.terraform_action != 'destroy'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Restart ECS service
-  #       env:
-  #         ECS_CLUSTER_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_cluster_name }}
-  #         ECS_SERVICE_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_service_name }}
-  #         TASK_DEFINITION_NAME: ${{ needs.deploy_aws_infrastructure.outputs.task_definition_name }}
-  #         TASK_DEFINITION_REVISION: ${{ needs.create_task_definition_revision.outputs.new_task_definition_revision }}
-  #       run: |
-  #         aws ecs update-service --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}" \
-  #           --task-definition "${TASK_DEFINITION_NAME}:${TASK_DEFINITION_REVISION}" --force-new-deployment
+  #--------------------------------------------------------------
+  # JOB 4: Restart ECS Fargate Service
+  #--------------------------------------------------------------
+  restart_ecs_service:
+    name: Restart ECS Fargate service
+    needs:
+      - deploy_aws_infrastructure
+      - create_task_definition_revision
+    if: needs.deploy_aws_infrastructure.outputs.terraform_action != 'destroy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Restart ECS service
+        env:
+          ECS_CLUSTER_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_cluster_name }}
+          ECS_SERVICE_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_service_name }}
+          TASK_DEFINITION_NAME: ${{ needs.deploy_aws_infrastructure.outputs.task_definition_name }}
+          TASK_DEFINITION_REVISION: ${{ needs.create_task_definition_revision.outputs.new_task_definition_revision }}
+        run: |
+          aws ecs update-service --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}" \
+            --task-definition "${TASK_DEFINITION_NAME}:${TASK_DEFINITION_REVISION}" --force-new-deployment
 
-  #         aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}"
+          aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}"
 
   # #--------------------------------------------------------------
   # # JOB 5: Test Application Health
