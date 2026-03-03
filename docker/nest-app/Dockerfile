@@ -144,4 +144,4 @@ RUN chmod +x /usr/local/bin/start-services.sh && \
     sed -i 's/\r$//' /usr/local/bin/start-services.sh
 
 # Run the script to start both PHP-FPM and Apache
-CMD ["/usr/local/bin/start-services.sh"]
+CMD ["/bin/bash", "/usr/local/bin/start-services.sh"]
