@@ -241,3 +241,40 @@ jobs:
             echo "Application health check failed"
             exit 1
           fi
+
+  #--------------------------------------------------------------
+  # JOB 6: Monitor ECS Deployment
+  #--------------------------------------------------------------
+  monitor_deployment:
+    name: Monitor ECS deployment
+    needs:
+      - deploy_aws_infrastructure
+      - restart_ecs_service
+    if: needs.deploy_aws_infrastructure.outputs.terraform_action != 'destroy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check ECS running tasks
+        env:
+          ECS_CLUSTER_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_cluster_name }}
+          ECS_SERVICE_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_service_name }}
+        run: |
+          RUNNING_COUNT=$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER_NAME}" \
+            --services "${ECS_SERVICE_NAME}" \
+            --query "services[0].runningCount" \
+            --output text)
+
+          DESIRED_COUNT=$(aws ecs describe-services \
+            --cluster "${ECS_CLUSTER_NAME}" \
+            --services "${ECS_SERVICE_NAME}" \
+            --query "services[0].desiredCount" \
+            --output text)
+
+          echo "Running tasks: $RUNNING_COUNT / Desired tasks: $DESIRED_COUNT"
+
+          if [ "$RUNNING_COUNT" -eq "$DESIRED_COUNT" ]; then
+            echo "All tasks are running successfully"
+          else
+            echo "Task count mismatch - deployment may have issues"
+            exit 1
+          fi
