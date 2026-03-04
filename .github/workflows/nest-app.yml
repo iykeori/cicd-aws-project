@@ -214,30 +214,30 @@ jobs:
 
           aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}"
 
-  # #--------------------------------------------------------------
-  # # JOB 5: Test Application Health
-  # #--------------------------------------------------------------
-  # test_application:
-  #   name: Test application health
-  #   needs:
-  #     - deploy_aws_infrastructure
-  #     - restart_ecs_service
-  #   if: needs.deploy_aws_infrastructure.outputs.terraform_action != 'destroy'
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: Wait for service to stabilize
-  #       run: sleep 30
+  #--------------------------------------------------------------
+  # JOB 5: Test Application Health
+  #--------------------------------------------------------------
+  test_application:
+    name: Test application health
+    needs:
+      - deploy_aws_infrastructure
+      - restart_ecs_service
+    if: needs.deploy_aws_infrastructure.outputs.terraform_action != 'destroy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wait for service to stabilize
+        run: sleep 30
 
-  #     - name: Check application health
-  #       env:
-  #         DOMAIN_NAME: ${{ needs.deploy_aws_infrastructure.outputs.domain_name }}
-  #       run: |
-  #         RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "https://www.${DOMAIN_NAME}")
-  #         echo "HTTP Status: $RESPONSE"
+      - name: Check application health
+        env:
+          DOMAIN_NAME: ${{ needs.deploy_aws_infrastructure.outputs.domain_name }}
+        run: |
+          RESPONSE=$(curl -s -o /dev/null -w "%{http_code}" "https://www.${DOMAIN_NAME}")
+          echo "HTTP Status: $RESPONSE"
 
-  #         if [ "$RESPONSE" -eq 200 ]; then
-  #           echo "Application is healthy"
-  #         else
-  #           echo "Application health check failed"
-  #           exit 1
-  #         fi
+          if [ "$RESPONSE" -eq 200 ]; then
+            echo "Application is healthy"
+          else
+            echo "Application health check failed"
+            exit 1
+          fi
