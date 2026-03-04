@@ -134,7 +134,7 @@ module "ecs" {
   project_name                 = module.vpc.project_name
   ecs_task_execution_role_arn  = module.ecs-role.ecs_task_execution_role_arn
   ecs_task_role_arn            = module.ecs-role.ecs_task_role_arn
-  architecture                 = "ARM64"
+  architecture                 = "X86_64"
   container_image              = "202202722931.dkr.ecr.us-east-1.amazonaws.com/nest:latest"
   region                       = module.vpc.region
   private_app_subnet_az1_id    = module.vpc.private_app_subnet_az1_id
