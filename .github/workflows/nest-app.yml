@@ -278,3 +278,90 @@ jobs:
             echo "Task count mismatch - deployment may have issues"
             exit 1
           fi
+
+  #--------------------------------------------------------------
+  # JOB 7: Rollback on Failure
+  #--------------------------------------------------------------
+  rollback:
+    name: Rollback to previous version
+    needs:
+      - deploy_aws_infrastructure
+      - create_task_definition_revision
+      - restart_ecs_service
+      - test_application
+      - monitor_deployment
+    if: failure() && needs.deploy_aws_infrastructure.outputs.terraform_action != 'destroy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Rollback ECS service to previous task definition
+        env:
+          ECS_CLUSTER_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_cluster_name }}
+          ECS_SERVICE_NAME: ${{ needs.deploy_aws_infrastructure.outputs.ecs_service_name }}
+          TASK_DEFINITION_NAME: ${{ needs.deploy_aws_infrastructure.outputs.task_definition_name }}
+          PREVIOUS_REVISION: ${{ needs.create_task_definition_revision.outputs.current_task_definition_revision }}
+        run: |
+          echo "Rolling back to task definition revision: $PREVIOUS_REVISION"
+
+          aws ecs update-service --cluster "${ECS_CLUSTER_NAME}" --service "${ECS_SERVICE_NAME}" \
+            --task-definition "${TASK_DEFINITION_NAME}:${PREVIOUS_REVISION}" --force-new-deployment
+
+          aws ecs wait services-stable --cluster "${ECS_CLUSTER_NAME}" --services "${ECS_SERVICE_NAME}"
+
+          echo "Rollback complete"
+
+  #--------------------------------------------------------------
+  # JOB 8: Send Notification
+  #--------------------------------------------------------------
+  notify:
+    name: Send notification
+    needs:
+      - deploy_aws_infrastructure
+      - build_and_push_image
+      - create_task_definition_revision
+      - restart_ecs_service
+      - test_application
+      - monitor_deployment
+    if: always() && needs.deploy_aws_infrastructure.outputs.terraform_action != 'destroy'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Send Slack notification
+        uses: slackapi/slack-github-action@v2.0.0
+        with:
+          webhook: ${{ secrets.SLACK_WEBHOOK_URL }}
+          webhook-type: incoming-webhook
+          payload: |
+            {
+              "text": "${{ needs.test_application.result == 'success' && needs.monitor_deployment.result == 'success' && '✅ Deployment Successful' || '❌ Deployment Failed' }}",
+              "blocks": [
+                {
+                  "type": "header",
+                  "text": {
+                    "type": "plain_text",
+                    "text": "${{ needs.test_application.result == 'success' && needs.monitor_deployment.result == 'success' && '✅ Deployment Successful' || '❌ Deployment Failed' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "fields": [
+                    { "type": "mrkdwn", "text": "*Project:*\n${{ env.PROJECT_NAME }}" },
+                    { "type": "mrkdwn", "text": "*Environment:*\n${{ env.ENVIRONMENT }}" },
+                    { "type": "mrkdwn", "text": "*Image:*\n${{ env.IMAGE_NAME }}:${{ env.IMAGE_TAG }}" },
+                    { "type": "mrkdwn", "text": "*Triggered by:*\n${{ github.actor }}" }
+                  ]
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Security Scan:*\n${{ needs.build_and_push_image.outputs.scan_summary || 'Scan not available' }}"
+                  }
+                },
+                {
+                  "type": "section",
+                  "text": {
+                    "type": "mrkdwn",
+                    "text": "*Pipeline:* <${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}|View Run>"
+                  }
+                }
+              ]
+            }
