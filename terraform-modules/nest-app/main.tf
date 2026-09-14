@@ -1,5 +1,5 @@
 module "vpc" {
-  source = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//vpc"
+  source = "git::ssh://git@github.com/iykeori/terraform_module_git.git//vpc"
   # Environment
   region            = "us-east-1"
   project_name      = "nest"
@@ -17,7 +17,7 @@ module "vpc" {
 }
 
 module "security-groups" {
-  source       = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//security-groups"
+  source       = "git::ssh://git@github.com/iykeori/terraform_module_git.git//security-groups"
   environment  = module.vpc.environment
   project_name = module.vpc.project_name
   vpc_id       = module.vpc.vpc_id
@@ -25,13 +25,13 @@ module "security-groups" {
 }
 
 module "acm" {
-  source            = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//acm"
+  source            = "git::ssh://git@github.com/iykeori/terraform_module_git.git//acm"
   domain_name       = "iykeori.com"
   alternative_names = "*.iykeori.com"
 }
 
 module "alb" {
-  source                = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//alb"
+  source                = "git::ssh://git@github.com/iykeori/terraform_module_git.git//alb"
   environment           = module.vpc.environment
   project_name          = module.vpc.project_name
   alb_security_group_id = module.security-groups.alb_security_group_id
@@ -45,7 +45,7 @@ module "alb" {
 }
 
 module "route53" {
-  source                             = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//route53"
+  source                             = "git::ssh://git@github.com/iykeori/terraform_module_git.git//route53"
   domain_name                        = module.acm.domain_name
   record_name                        = "www"
   application_load_balancer_zone_id  = module.alb.application_load_balancer_zone_id
@@ -53,7 +53,7 @@ module "route53" {
 }
 
 module "data_migrate_ec2" {
-  source                              = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//data-migrate"
+  source                              = "git::ssh://git@github.com/iykeori/terraform_module_git.git//data-migrate"
   amazon_linux_ami_id                 = "ami-07ff62358b87c7116"
   ec2_instance_type                   = "t2.micro"
   private_app_subnet_az1_id           = module.vpc.private_app_subnet_az1_id
@@ -71,7 +71,7 @@ module "data_migrate_ec2" {
 }
 
 module "eice" {
-  source                    = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//eice"
+  source                    = "git::ssh://git@github.com/iykeori/terraform_module_git.git//eice"
   private_app_subnet_az2_id = module.vpc.private_app_subnet_az2_id
   eice_security_group_id    = module.security-groups.eice_security_group_id
   environment               = module.vpc.environment
@@ -80,19 +80,19 @@ module "eice" {
 }
 
 module "iam-ec2_instance_profile" {
-  source       = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//iam/ec2-instance-profile"
+  source       = "git::ssh://git@github.com/iykeori/terraform_module_git.git//iam/ec2-instance-profile"
   environment  = module.vpc.environment
   project_name = module.vpc.project_name
 }
 
 module "ecs-role" {
-  source       = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//iam/ecs-role"
+  source       = "git::ssh://git@github.com/iykeori/terraform_module_git.git//iam/ecs-role"
   project_name = module.vpc.project_name
   environment  = module.vpc.environment
 }
 
 module "nat-gateway" {
-  source                     = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//nat-gateway"
+  source                     = "git::ssh://git@github.com/iykeori/terraform_module_git.git//nat-gateway"
   environment                = module.vpc.environment
   public_subnet_az1_id       = module.vpc.public_subnet_az1_id
   internet_gateway           = module.vpc.internet_gateway
@@ -105,7 +105,7 @@ module "nat-gateway" {
 }
 
 module "rds" {
-  source                     = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//rds"
+  source                     = "git::ssh://git@github.com/iykeori/terraform_module_git.git//rds"
   environment                = module.vpc.environment
   project_name               = module.vpc.project_name
   private_data_subnet_az1_id = module.vpc.private_data_subnet_az1_id
@@ -123,18 +123,19 @@ module "rds" {
 }
 
 module "secret-manager" {
-  source      = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//secrets-manager"
+  source      = "git::ssh://git@github.com/iykeori/terraform_module_git.git//secrets-manager"
   secret_name = "dev-secrets"
 
 }
 
 module "ecs" {
-  source                       = "git::ssh://git@github.com/iykeori/aos_cohort_terraform_module_git.git//ecs"
-  environment                  = module.vpc.environment
-  project_name                 = module.vpc.project_name
-  ecs_task_execution_role_arn  = module.ecs-role.ecs_task_execution_role_arn
-  ecs_task_role_arn            = module.ecs-role.ecs_task_role_arn
-  architecture                 = "X86_64"
+  source                      = "git::ssh://git@github.com/iykeori/terraform_module_git.git//ecs"
+  environment                 = module.vpc.environment
+  project_name                = module.vpc.project_name
+  ecs_task_execution_role_arn = module.ecs-role.ecs_task_execution_role_arn
+  ecs_task_role_arn           = module.ecs-role.ecs_task_role_arn
+  # architecture                 = "ARM64"
+  architecture                 = "X86_64" #--- ARM64 is not supported by CICD github action, so we will use X86_64
   container_image              = "202202722931.dkr.ecr.us-east-1.amazonaws.com/nest:latest"
   region                       = module.vpc.region
   private_app_subnet_az1_id    = module.vpc.private_app_subnet_az1_id
