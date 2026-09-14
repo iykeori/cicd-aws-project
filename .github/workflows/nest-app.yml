@@ -51,7 +51,7 @@ env:
 jobs:
   #--------------------------------------------------------------
   # JOB 1: Build AWS Infrastructure
-  #--------------------------------------------------------------
+  #-------------------------------------------------------------
   deploy_aws_infrastructure:
     name: Build AWS infrastructure
     runs-on: ubuntu-latest
